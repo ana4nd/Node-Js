@@ -1,8 +1,12 @@
-import express from "express";
+import express, { urlencoded } from "express";
 import users from "./MOCK_DATA.json" with { type: "json" };
+import fs from "fs";
+import { json } from "stream/consumers";
 
 
 const app = express();
+
+app.use(urlencoded({extended: false}));
 
 const PORT  = 8000;
 
@@ -31,18 +35,50 @@ app.get('/api/user/:id', (req, res)=>{
 })
 
 app.post('/api/users', (req, res)=>{
-    // TODO : Create new user
-    res.json({status: "pending"});
+    const body = req.body;
+    console.log("Body", body);
+    users.push({id: users.length + 1,...body });
+    fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data)=>{
+       return  res.json({status: "success", id: users.length});
+    });
 })
 
 app.patch('/api/users/:id', (req,res)=>{
     // TODO : Edit the user with id
-    return res.json({status: "pending"});
+   const getId = Number(req.params.id);
+   const body = req.body;
+
+   const userIndex = users.findIndex((user)=> user.id === getId);
+
+   const gotUser = users[userIndex];
+
+   const updatedUser = {...gotUser, ...body};
+
+   users[userIndex] = updatedUser;
+
+   fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data)=>{
+    return  res.json({status: "success", updatedUser
+    });
+   })
 });
 
 app.delete('/api/users/:id', (req, res)=>{
     // TODO: Delete the user with id
-    return res.json({status: "pending"});
+    const getId = Number(req.params.id);
+
+    const userIndex = users.findIndex((user)=> user.id === getId);
+
+    const gotUser = users[userIndex];
+
+    if(userIndex !== -1){
+        users.splice(userIndex, 1);
+    }
+
+    fs.unlink("./MOCK_DATA.json", (err)=>{
+        fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err, data)=>{
+            return res.json({status: "success", users: gotUser });
+        })
+    })
 })
 
 
